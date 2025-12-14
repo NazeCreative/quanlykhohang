@@ -7,12 +7,12 @@ import { collection, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { useAuth } from '../context/AuthContext'; // Import Auth
+import { useAuth } from '../context/AuthContext';
 
 const { Title, Text } = Typography;
 
 const InvoiceList = () => {
-  const { userRole } = useAuth(); // Lấy quyền
+  const { userRole } = useAuth();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState(''); 
@@ -32,7 +32,7 @@ const InvoiceList = () => {
   }, []);
 
   const handleDelete = async (id) => {
-    try { await deleteDoc(doc(db, 'invoices', id)); message.success('Đã xóa hóa đơn'); } 
+    try { await deleteDoc(doc(db, 'invoices', id)); message.success('Đã xóa đơn xuất'); } 
     catch (error) { message.error('Lỗi khi xóa'); }
   };
 
@@ -54,7 +54,6 @@ const InvoiceList = () => {
     { title: 'Khách hàng', dataIndex: 'customerName', key: 'customerName' },
     { title: 'Tổng tiền', dataIndex: 'grandTotal', key: 'grandTotal', align: 'right', render: v => <Text type="danger" strong>{v?.toLocaleString()} đ</Text> },
     {
-        // === CỘT MỚI: NGƯỜI THỰC HIỆN ===
         title: 'Người thực hiện',
         key: 'createdBy',
         render: (_, record) => {
@@ -63,10 +62,28 @@ const InvoiceList = () => {
             let color = 'default';
             if (record.createdBy.role === 'admin') { roleName = 'Admin'; color = 'red'; }
             else if (record.createdBy.role === 'manager') { roleName = 'Quản lí'; color = 'gold'; }
-            
             return (
                 <Space direction="vertical" size={0}>
                     <Text strong>{record.createdBy.name}</Text>
+                    <Tag color={color} style={{marginRight: 0}}>{roleName}</Tag>
+                </Space>
+            );
+        }
+    },
+    {
+        // === CỘT MỚI: NGƯỜI XÁC NHẬN ===
+        title: 'Người xác nhận',
+        key: 'approvedBy',
+        render: (_, record) => {
+            if (!record.approvedBy) return <Text type="secondary" italic>Chưa duyệt</Text>;
+            
+            let roleName = 'Admin';
+            let color = 'red';
+            if (record.approvedBy.role === 'manager') { roleName = 'Quản lí'; color = 'gold'; }
+            
+            return (
+                <Space direction="vertical" size={0}>
+                    <Text strong style={{color: '#52c41a'}}>{record.approvedBy.name}</Text>
                     <Tag color={color} style={{marginRight: 0}}>{roleName}</Tag>
                 </Space>
             );
@@ -78,7 +95,6 @@ const InvoiceList = () => {
       render: (_, record) => (
         <Space>
           <Button type="primary" ghost icon={<EyeOutlined />} onClick={() => handleViewDetail(record)} />
-          {/* === LOGIC: Ẩn nút Xóa nếu là nhân viên === */}
           {userRole !== 'employee' && (
             <Popconfirm title="Xóa?" onConfirm={() => handleDelete(record.id)}><Button danger icon={<DeleteOutlined />} /></Popconfirm>
           )}
@@ -98,37 +114,42 @@ const InvoiceList = () => {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <Title level={2}>Danh sách Hóa đơn</Title>
+        <Title level={2}>Danh sách</Title>
         <Space>
           <Input placeholder="Tìm mã, khách, ngày..." prefix={<SearchOutlined />} value={searchText} onChange={e => setSearchText(e.target.value)} style={{ width: 250 }} allowClear />
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/invoices/new')}>Thêm hóa đơn</Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/invoices/new')}>Thêm đơn xuất</Button>
         </Space>
       </div>
 
       <Table columns={columns} dataSource={filteredData} loading={loading} bordered />
 
       <Modal
-        title={<Title level={4}>Chi tiết hóa đơn: {selectedInvoice?.invoiceNo}</Title>}
+        title={<Title level={4}>Chi tiết đơn xuất: {selectedInvoice?.invoiceNo}</Title>}
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         width={800}
         footer={[
-          <Button key="print" type="primary" icon={<PrinterOutlined />} onClick={handlePrint}>In Hóa Đơn</Button>,
+          <Button key="print" type="primary" icon={<PrinterOutlined />} onClick={handlePrint}>In Đơn</Button>,
           <Button key="close" onClick={() => setIsModalOpen(false)}>Đóng</Button>
         ]}
       >
         {selectedInvoice && (
           <div id="invoice-print-area">
             <div className="print-header" style={{ display: 'none', textAlign: 'center', marginBottom: 20 }}>
-              <h2>HÓA ĐƠN BÁN HÀNG</h2>
-              <p>Mã hóa đơn: {selectedInvoice.invoiceNo}</p>
+              <h2>ĐƠN XUẤT HÀNG</h2>
+              <p>Mã đơn: {selectedInvoice.invoiceNo}</p>
             </div>
             <Descriptions bordered column={2} size="small">
               <Descriptions.Item label="Khách hàng">{selectedInvoice.customerName}</Descriptions.Item>
               <Descriptions.Item label="Ngày lập">{dayjs(selectedInvoice.date).format('DD/MM/YYYY')}</Descriptions.Item>
               <Descriptions.Item label="Thanh toán">{selectedInvoice.paymentMethod}</Descriptions.Item>
-              <Descriptions.Item label="Trạng thái">{selectedInvoice.status === 'approved' ? 'Đã thanh toán' : 'Chờ xử lý'}</Descriptions.Item>
+              <Descriptions.Item label="Trạng thái">{selectedInvoice.status === 'approved' ? 'Đã xuất' : 'Chờ xử lý'}</Descriptions.Item>
               <Descriptions.Item label="Người tạo">{selectedInvoice.createdBy?.name || 'N/A'}</Descriptions.Item>
+               <Descriptions.Item label="Người duyệt">
+                  {selectedInvoice.approvedBy ? 
+                     <span style={{color: 'green', fontWeight: 'bold'}}>{selectedInvoice.approvedBy.name}</span> 
+                     : '---'}
+              </Descriptions.Item>
               <Descriptions.Item label="Ghi chú" span={2}>{selectedInvoice.note || 'Không có'}</Descriptions.Item>
             </Descriptions>
             <Divider orientation="left">Chi tiết sản phẩm</Divider>
@@ -140,8 +161,8 @@ const InvoiceList = () => {
               }}
             />
             <div className="print-footer" style={{ display: 'none', marginTop: 40, display: 'flex', justifyContent: 'space-between' }}>
-                <div style={{textAlign: 'center', width: '40%'}}><p><strong>Người mua hàng</strong></p><p>(Ký, ghi rõ họ tên)</p></div>
-                <div style={{textAlign: 'center', width: '40%'}}><p><strong>Người bán hàng</strong></p><p>(Ký, ghi rõ họ tên)</p></div>
+                <div style={{textAlign: 'center', width: '40%'}}><p><strong>Người nhận hàng</strong></p><p>(Ký, ghi rõ họ tên)</p></div>
+                <div style={{textAlign: 'center', width: '40%'}}><p><strong>Người lập phiếu</strong></p><p>(Ký, ghi rõ họ tên)</p></div>
             </div>
           </div>
         )}

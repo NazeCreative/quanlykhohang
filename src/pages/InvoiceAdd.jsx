@@ -8,18 +8,17 @@ import { collection, addDoc, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { useAuth } from '../context/AuthContext'; // 1. Import Auth
+import { useAuth } from '../context/AuthContext';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
 const InvoiceAdd = () => {
-  const { currentUser, userRole } = useAuth(); // 2. Lấy thông tin user
+  const { currentUser, userRole } = useAuth();
   const [form] = Form.useForm();
   const [productForm] = Form.useForm();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -30,18 +29,13 @@ const InvoiceAdd = () => {
       try {
         const cusSnap = await getDocs(collection(db, "customers"));
         setCustomers(cusSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-
         const prodSnap = await getDocs(collection(db, "products"));
         setProducts(prodSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-
         const invoiceSnap = await getDocs(collection(db, "invoices"));
         const nextId = invoiceSnap.size + 1;
         const autoCode = `XU-${nextId.toString().padStart(2, '0')}`;
         form.setFieldsValue({ invoiceNo: autoCode, date: dayjs() });
-
-      } catch (error) {
-        message.error("Lỗi tải dữ liệu: " + error.message);
-      }
+      } catch (error) { message.error("Lỗi tải dữ liệu: " + error.message); }
     };
     fetchData();
   }, []);
@@ -58,102 +52,41 @@ const InvoiceAdd = () => {
     const importPrice = Number(product?.lastImportPrice) || 0;
     let rawPrice = importPrice * 1.1;
     const sellingPrice = Math.round(rawPrice / 1000) * 1000; 
-    productForm.setFieldsValue({ 
-      unitName: product?.unitName || '', 
-      price: sellingPrice,
-      quantity: 1 
-    });
+    productForm.setFieldsValue({ unitName: product?.unitName || '', price: sellingPrice, quantity: 1 });
   };
 
   const onAddProductToCart = (values) => {
     if (!selectedProduct) return;
     const inputQty = values.quantity;
     const stockQty = selectedProduct.quantity;
-
-    if (inputQty > stockQty) {
-      message.error(`Kho chỉ còn ${stockQty} cái.`);
-      return;
-    }
-
+    if (inputQty > stockQty) { message.error(`Kho chỉ còn ${stockQty} cái.`); return; }
     const existingItem = cart.find(item => item.productId === values.productId);
     if (existingItem) {
-      if (existingItem.quantity + inputQty > stockQty) {
-        message.error(`Tổng số lượng vượt quá tồn kho!`);
-        return;
-      }
-      setCart(cart.map(item => 
-        item.productId === values.productId
-          ? { ...item, quantity: item.quantity + inputQty, total: (item.quantity + inputQty) * item.price }
-          : item
-      ));
+      if (existingItem.quantity + inputQty > stockQty) { message.error(`Tổng số lượng vượt quá tồn kho!`); return; }
+      setCart(cart.map(item => item.productId === values.productId ? { ...item, quantity: item.quantity + inputQty, total: (item.quantity + inputQty) * item.price } : item));
     } else {
-      setCart([...cart, {
-          key: selectedProduct.id,
-          productId: selectedProduct.id,
-          name: selectedProduct.name,
-          unitName: values.unitName,
-          quantity: inputQty,
-          price: values.price,
-          total: inputQty * values.price,
-          maxStock: stockQty
-        }
-      ]);
+      setCart([...cart, { key: selectedProduct.id, productId: selectedProduct.id, name: selectedProduct.name, unitName: values.unitName, quantity: inputQty, price: values.price, total: inputQty * values.price, maxStock: stockQty }]);
     }
     productForm.resetFields(['productId', 'unitName', 'quantity', 'price']);
     setSelectedProduct(null);
   };
 
-  const handleRemoveFromCart = (productId) => {
-    setCart(cart.filter(item => item.productId !== productId));
-  };
+  const handleRemoveFromCart = (productId) => { setCart(cart.filter(item => item.productId !== productId)); };
 
   const handleSaveInvoice = async () => {
     if (cart.length === 0) { message.error('Giỏ hàng trống!'); return; }
     try {
       const values = await form.validateFields();
       setLoading(true);
-
-      const sanitizedCart = cart.map(item => ({
-        productId: item.productId,
-        name: item.name || "Không tên",
-        unitName: item.unitName || "",
-        quantity: Number(item.quantity) || 0,
-        price: Number(item.price) || 0,
-        total: Number(item.total) || 0,
-      }));
-
+      const sanitizedCart = cart.map(item => ({ productId: item.productId, name: item.name || "Không tên", unitName: item.unitName || "", quantity: Number(item.quantity) || 0, price: Number(item.price) || 0, total: Number(item.total) || 0, }));
       const grandTotal = sanitizedCart.reduce((sum, item) => sum + item.total, 0);
       const customer = customers.find(c => c.id === values.customerId);
       const customerName = customer ? customer.name : "Khách lẻ";
-
-      const invoiceData = {
-        invoiceNo: values.invoiceNo,
-        date: values.date.format('YYYY-MM-DD'),
-        customerId: values.customerId,
-        customerName: customerName,
-        paymentMethod: values.paymentMethod,
-        items: sanitizedCart,
-        grandTotal: grandTotal,
-        status: "pending", 
-        note: values.note || '',
-        // 3. LƯU THÔNG TIN NGƯỜI TẠO
-        createdBy: {
-          name: currentUser?.displayName || 'Unknown',
-          role: userRole || 'employee',
-          uid: currentUser?.uid
-        }
-      };
-
+      const invoiceData = { invoiceNo: values.invoiceNo, date: values.date.format('YYYY-MM-DD'), customerId: values.customerId, customerName: customerName, paymentMethod: values.paymentMethod, items: sanitizedCart, grandTotal: grandTotal, status: "pending", note: values.note || '', createdBy: { name: currentUser?.displayName || 'Unknown', role: userRole || 'employee', uid: currentUser?.uid } };
       await addDoc(collection(db, "invoices"), invoiceData);
       message.success('Lưu thành công!');
       navigate('/invoices/pending'); 
-
-    } catch (error) {
-      console.error(error);
-      message.error(`Lỗi: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
+    } catch (error) { console.error(error); message.error(`Lỗi: ${error.message}`); } finally { setLoading(false); }
   };
 
   const columns = [
@@ -162,21 +95,17 @@ const InvoiceAdd = () => {
     { title: 'Số lượng', dataIndex: 'quantity', key: 'quantity' },
     { title: 'Đơn giá', dataIndex: 'price', key: 'price', render: val => val?.toLocaleString() },
     { title: 'Thành tiền', dataIndex: 'total', key: 'total', render: val => val?.toLocaleString() },
-    {
-      title: 'Xóa',
-      key: 'action',
-      render: (_, record) => <Button danger icon={<DeleteOutlined />} onClick={() => handleRemoveFromCart(record.productId)} />
-    }
+    { title: 'Xóa', key: 'action', render: (_, record) => <Button danger icon={<DeleteOutlined />} onClick={() => handleRemoveFromCart(record.productId)} /> }
   ];
 
   return (
     <div>
-      <Title level={2}>Tạo Hóa Đơn Bán Hàng</Title>
+      <Title level={2}>Tạo đơn xuất</Title> {/* Đã sửa tên trang */}
       <Row gutter={16}>
         <Col span={8}>
-            <Card title="Thông tin hóa đơn" bordered={false}>
+            <Card title="Thông tin phiếu xuất" bordered={false}>
                 <Form form={form} layout="vertical" initialValues={{ date: dayjs(), paymentMethod: "Tiền mặt" }}>
-                    <Form.Item name="invoiceNo" label="Mã hóa đơn" rules={[{ required: true }]}>
+                    <Form.Item name="invoiceNo" label="Mã đơn xuất" rules={[{ required: true }]}>
                         <Input disabled style={{ color: '#000', fontWeight: 'bold' }} />
                     </Form.Item>
                     <Form.Item name="date" label="Ngày bán" rules={[{ required: true }]}>
@@ -194,12 +123,12 @@ const InvoiceAdd = () => {
                         </Select>
                     </Form.Item>
                     <Form.Item name="note" label="Ghi chú"><Input.TextArea rows={2} /></Form.Item>
-                    <Button type="primary" size="large" block loading={loading} icon={<SaveOutlined />} onClick={handleSaveInvoice}>LƯU HÓA ĐƠN</Button>
+                    <Button type="primary" size="large" block loading={loading} icon={<SaveOutlined />} onClick={handleSaveInvoice}>LƯU ĐƠN</Button>
                 </Form>
             </Card>
         </Col>
         <Col span={16}>
-            <Card title="Chi tiết đơn hàng" bordered={false}>
+            <Card title="Chi tiết đơn xuất" bordered={false}>
                 <Form form={productForm} onFinish={onAddProductToCart} layout="vertical">
                     <Row gutter={16} align="bottom">
                         <Col span={10}>
@@ -235,13 +164,7 @@ const InvoiceAdd = () => {
                 </Form>
                 <Table columns={columns} dataSource={cart} pagination={false} summary={(pageData) => {
                         const total = pageData.reduce((sum, item) => sum + item.total, 0);
-                        return (
-                            <Table.Summary.Row>
-                                <Table.Summary.Cell index={0} colSpan={4} align="right"><Text strong>Tổng thanh toán:</Text></Table.Summary.Cell>
-                                <Table.Summary.Cell index={1}><Text type="danger" strong>{total.toLocaleString()} đ</Text></Table.Summary.Cell>
-                                <Table.Summary.Cell index={2} />
-                            </Table.Summary.Row>
-                        );
+                        return (<Table.Summary.Row><Table.Summary.Cell index={0} colSpan={4} align="right"><Text strong>Tổng thanh toán:</Text></Table.Summary.Cell><Table.Summary.Cell index={1}><Text type="danger" strong>{total.toLocaleString()} đ</Text></Table.Summary.Cell><Table.Summary.Cell index={2} /></Table.Summary.Row>);
                     }}
                 />
             </Card>

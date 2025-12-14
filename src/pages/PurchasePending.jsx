@@ -11,12 +11,10 @@ import { useAuth } from '../context/AuthContext';
 const { Title, Text } = Typography;
 
 const PurchasePending = () => {
-  const { userRole } = useAuth();
+  const { currentUser, userRole } = useAuth(); // Lấy thêm currentUser để biết ai đang duyệt
   const [pendingPurchases, setPendingPurchases] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
-
-  // State Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
 
@@ -37,6 +35,8 @@ const PurchasePending = () => {
     try {
       setLoading(true);
       const batch = writeBatch(db);
+      
+      // 1. Cộng tồn kho
       for (const item of record.items) {
         if (item.productId) {
           const productRef = doc(db, 'products', item.productId);
@@ -49,24 +49,32 @@ const PurchasePending = () => {
           await addDoc(collection(db, 'products'), newProductData);
         }
       }
+
+      // 2. Cập nhật trạng thái đơn hàng & LƯU NGƯỜI DUYỆT
       const purchaseRef = doc(db, 'purchases', record.id);
-      batch.update(purchaseRef, { status: 'approved' });
+      batch.update(purchaseRef, { 
+        status: 'approved',
+        approvedBy: { // <--- THÊM MỚI: Lưu thông tin người duyệt
+          name: currentUser?.displayName || 'Unknown',
+          role: userRole || 'admin',
+          uid: currentUser?.uid,
+          at: new Date().toISOString()
+        }
+      });
+
       await batch.commit();
-      message.success('Đã duyệt đơn hàng!');
-      setIsModalOpen(false); // Đóng modal nếu đang mở
+      message.success('Đã duyệt đơn nhập!');
+      setIsModalOpen(false);
     } catch (error) { message.error('Lỗi khi duyệt.'); } 
     finally { setLoading(false); }
   };
 
   const handleReject = async (id) => {
-    try { await deleteDoc(doc(db, 'purchases', id)); message.success('Đã xóa đơn hàng.'); setIsModalOpen(false); } 
+    try { await deleteDoc(doc(db, 'purchases', id)); message.success('Đã xóa đơn nhập.'); setIsModalOpen(false); } 
     catch (error) { message.error('Lỗi khi xóa.'); }
   };
 
-  const handleViewDetail = (record) => {
-    setSelectedRecord(record);
-    setIsModalOpen(true);
-  };
+  const handleViewDetail = (record) => { setSelectedRecord(record); setIsModalOpen(true); };
 
   const filteredData = pendingPurchases.filter(item => {
     const text = searchText.toLowerCase();
@@ -77,7 +85,6 @@ const PurchasePending = () => {
     );
   });
 
-  // Cột cho Modal Detail
   const detailColumns = [
     { title: 'Tên sản phẩm', dataIndex: 'name', key: 'name' },
     { title: 'Đơn vị', dataIndex: 'unitName', key: 'unitName' },
@@ -93,11 +100,9 @@ const PurchasePending = () => {
     {
       title: 'Sản phẩm', dataIndex: 'items', key: 'items', width: 300,
       render: (items) => {
-        // === LOGIC MỚI: Chỉ hiện 3 dòng ===
         if (!items || items.length === 0) return '-';
         const displayItems = items.slice(0, 3);
         const remaining = items.length - 3;
-        
         return (
           <div style={{ fontSize: '13px' }}>
             {displayItems.map((item, index) => (
@@ -133,10 +138,7 @@ const PurchasePending = () => {
       title: 'Hành động', key: 'action', align: 'center',
       render: (_, record) => (
         <Space>
-          {/* Nút xem chi tiết */}
           <Button icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>Chi tiết</Button>
-
-          {/* Các nút xử lý chỉ hiện nếu KHÔNG phải nhân viên */}
           {userRole !== 'employee' && (
              <>
                <Popconfirm title="Duyệt?" onConfirm={() => handleApprove(record)} okText="Duyệt" cancelText="Hủy">
@@ -155,24 +157,22 @@ const PurchasePending = () => {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Title level={2}>Xác nhận Đơn hàng nhập</Title>
+        <Title level={2}>Xác nhận đơn nhập</Title>
         <Input placeholder="Tìm theo mã, ngày, NCC..." prefix={<SearchOutlined />} value={searchText} onChange={e => setSearchText(e.target.value)} style={{ width: 300 }} allowClear />
       </div>
       <Card bordered={false} className="criclebox tablespace">
         <Table columns={columns} dataSource={filteredData} loading={loading} rowKey="id" bordered />
       </Card>
 
-      {/* === MODAL DUYỆT ĐƠN === */}
       <Modal
-        title="Chi tiết & Duyệt Đơn Hàng"
+        title="Chi tiết & Duyệt Đơn Nhập"
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         footer={[
            <Button key="close" onClick={() => setIsModalOpen(false)}>Đóng</Button>,
-           // Nếu không phải nhân viên thì mới hiện nút duyệt trong Modal
            userRole !== 'employee' && (
              <Popconfirm key="approve" title="Duyệt đơn này?" onConfirm={() => handleApprove(selectedRecord)}>
-               <Button type="primary" style={{ background: '#52c41a', borderColor: '#52c41a' }}>Duyệt Đơn Hàng</Button>
+               <Button type="primary" style={{ background: '#52c41a', borderColor: '#52c41a' }}>Duyệt Đơn Nhập</Button>
              </Popconfirm>
            )
         ]}
@@ -187,10 +187,7 @@ const PurchasePending = () => {
               <Descriptions.Item label="Người tạo">{selectedRecord.createdBy?.name || 'N/A'}</Descriptions.Item>
             </Descriptions>
             <Table 
-              columns={detailColumns} 
-              dataSource={selectedRecord.items} 
-              pagination={false} 
-              bordered size="small"
+              columns={detailColumns} dataSource={selectedRecord.items} pagination={false} bordered size="small"
               summary={(pageData) => {
                 let total = 0; pageData.forEach(({ total: t }) => { total += t; });
                 return (<Table.Summary.Row><Table.Summary.Cell index={0} colSpan={4} align="right"><Text strong>TỔNG CỘNG:</Text></Table.Summary.Cell><Table.Summary.Cell index={1}><Text type="danger" strong>{total.toLocaleString()} đ</Text></Table.Summary.Cell></Table.Summary.Row>);

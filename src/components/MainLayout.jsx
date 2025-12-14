@@ -3,7 +3,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   DashboardOutlined,
-  TeamOutlined, // Dùng icon này cho Nhân sự
+  TeamOutlined,
   UserOutlined,
   AppstoreOutlined,
   ShopOutlined,
@@ -13,7 +13,7 @@ import {
   AccountBookOutlined,
   LogoutOutlined
 } from '@ant-design/icons';
-import { Layout, Menu, Button, Dropdown, Avatar, Space, Typography, Tag } from 'antd';
+import { Layout, Menu, Button, Dropdown, Avatar, Space, Typography } from 'antd';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { auth } from '../firebase';
@@ -24,7 +24,7 @@ const { Text } = Typography;
 
 const MainLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
-  const { currentUser, userRole } = useAuth(); // Lấy thêm userRole
+  const { currentUser, userRole } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -47,19 +47,19 @@ const MainLayout = () => {
     { 
       key: 'purchases', 
       icon: <ShoppingCartOutlined />, 
-      label: 'Đơn hàng',
+      label: 'Quản lý đơn nhập', // SỬA TÊN MỤC
       children: [
-        { key: '/purchases/list', label: <Link to="/purchases/list">Đơn hàng</Link> },
-        { key: '/purchases/pending', label: <Link to="/purchases/pending">Xác nhận đơn hàng</Link> },
+        { key: '/purchases/list', label: <Link to="/purchases/list">Danh sách đơn nhập</Link> }, // SỬA TÊN
+        { key: '/purchases/pending', label: <Link to="/purchases/pending">Xác nhận đơn nhập</Link> }, // SỬA TÊN
       ]
     },
     { 
       key: 'invoices', 
       icon: <FileDoneOutlined />, 
-      label: 'Quản lý hóa đơn',
+      label: 'Quản lý đơn xuất', // SỬA TÊN MỤC
       children: [
-        { key: '/invoices/list', label: <Link to="/invoices/list">Danh sách hóa đơn</Link> },
-        { key: '/invoices/pending', label: <Link to="/invoices/pending">Phê duyệt hóa đơn</Link> },
+        { key: '/invoices/list', label: <Link to="/invoices/list">Danh sách đơn xuất</Link> }, // SỬA TÊN
+        { key: '/invoices/pending', label: <Link to="/invoices/pending">Phê duyệt đơn xuất</Link> }, // SỬA TÊN
       ]
     },
     { 
@@ -70,7 +70,7 @@ const MainLayout = () => {
         { key: '/inventory/report', label: <Link to="/inventory/report">Báo cáo tồn kho</Link> },
       ]
     },
-    // --- MỚI THÊM: Chỉ hiển thị nếu là Admin hoặc Manager ---
+    // --- Chỉ hiển thị nếu là Admin hoặc Manager ---
     (userRole === 'admin' || userRole === 'manager') ? {
       key: '/users',
       icon: <TeamOutlined />,
@@ -102,7 +102,7 @@ const MainLayout = () => {
           theme="dark"
           mode="inline"
           defaultSelectedKeys={['/']}
-          items={menuItems} // Antd sẽ tự lọc bỏ các item là null
+          items={menuItems}
           style={{ background: '#001529' }}
         />
       </Sider>
@@ -121,7 +121,9 @@ const MainLayout = () => {
                 <Avatar icon={<UserOutlined />} />
                 <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.2' }}>
                   <Text strong>{currentUser?.displayName || 'User'}</Text>
-                  <Text type="secondary" style={{ fontSize: '11px' }}>{userRole === 'admin' ? 'Quản trị viên' : 'Nhân viên'}</Text>
+                  <Text type="secondary" style={{ fontSize: '11px' }}>
+                     {userRole === 'admin' ? 'Quản trị viên' : userRole === 'manager' ? 'Quản lí' : 'Nhân viên'}
+                  </Text>
                 </div>
               </Space>
             </a>

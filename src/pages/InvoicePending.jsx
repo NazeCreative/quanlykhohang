@@ -11,7 +11,7 @@ import { useAuth } from '../context/AuthContext';
 const { Title, Text } = Typography;
 
 const InvoicePending = () => {
-  const { userRole } = useAuth();
+  const { currentUser, userRole } = useAuth(); // Lấy currentUser
   const [pendingInvoices, setPendingInvoices] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState(''); 
@@ -36,23 +36,36 @@ const InvoicePending = () => {
     try {
       setLoading(true);
       const batch = writeBatch(db);
-      const invoiceRef = doc(db, 'invoices', record.id);
-      batch.update(invoiceRef, { status: 'approved' });
+      
+      // 1. Trừ tồn kho
       record.items.forEach(item => {
         if (item.productId) {
           const productRef = doc(db, 'products', item.productId);
           batch.update(productRef, { quantity: increment(-item.quantity) });
         }
       });
+
+      // 2. Update trạng thái & LƯU NGƯỜI DUYỆT
+      const invoiceRef = doc(db, 'invoices', record.id);
+      batch.update(invoiceRef, { 
+        status: 'approved',
+        approvedBy: { // <--- THÊM MỚI
+          name: currentUser?.displayName || 'Unknown',
+          role: userRole || 'admin',
+          uid: currentUser?.uid,
+          at: new Date().toISOString()
+        }
+      });
+
       await batch.commit();
-      message.success('Đã duyệt hóa đơn!');
+      message.success('Đã duyệt đơn xuất!');
       setIsModalOpen(false);
     } catch (error) { message.error('Lỗi khi duyệt.'); } 
     finally { setLoading(false); }
   };
 
   const handleReject = async (id) => {
-    try { await deleteDoc(doc(db, 'invoices', id)); message.success('Đã hủy hóa đơn.'); setIsModalOpen(false); } 
+    try { await deleteDoc(doc(db, 'invoices', id)); message.success('Đã hủy đơn xuất.'); setIsModalOpen(false); } 
     catch (error) { message.error('Lỗi khi hủy.'); }
   };
 
@@ -85,11 +98,9 @@ const InvoicePending = () => {
     {
       title: 'Sản phẩm', dataIndex: 'items', key: 'items', width: 300,
       render: (items) => {
-        // === LOGIC MỚI: Chỉ hiện 3 dòng ===
         if (!items || items.length === 0) return '-';
         const displayItems = items.slice(0, 3);
         const remaining = items.length - 3;
-        
         return (
           <div style={{ fontSize: '13px' }}>
             {displayItems.map((item, index) => (
@@ -126,7 +137,6 @@ const InvoicePending = () => {
       render: (_, record) => (
         <Space>
           <Button icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>Chi tiết</Button>
-
           {userRole !== 'employee' && (
             <>
               <Popconfirm title="Duyệt?" onConfirm={() => handleApprove(record)} okText="Xuất kho" cancelText="Hủy">
@@ -145,22 +155,21 @@ const InvoicePending = () => {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Title level={2}>Phê duyệt Hóa đơn xuất</Title>
+        <Title level={2}>Phê duyệt đơn xuất</Title>
         <Input placeholder="Tìm theo mã, ngày, khách..." prefix={<SearchOutlined />} value={searchText} onChange={e => setSearchText(e.target.value)} style={{ width: 300 }} allowClear />
       </div>
       <Card bordered={false} className="criclebox tablespace">
         <Table columns={columns} dataSource={filteredData} loading={loading} rowKey="id" bordered />
       </Card>
 
-      {/* === MODAL === */}
       <Modal
-        title="Chi tiết Hóa Đơn (Chờ Duyệt)"
+        title="Chi tiết Đơn xuất (Chờ Duyệt)"
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         footer={[
           <Button key="close" onClick={() => setIsModalOpen(false)}>Đóng</Button>,
           userRole !== 'employee' && (
-            <Popconfirm key="appr" title="Duyệt hóa đơn này?" onConfirm={() => handleApprove(selectedRecord)}>
+            <Popconfirm key="appr" title="Duyệt đơn này?" onConfirm={() => handleApprove(selectedRecord)}>
               <Button type="primary" style={{ background: '#52c41a', borderColor: '#52c41a' }}>Duyệt & Xuất kho</Button>
             </Popconfirm>
           )
@@ -176,10 +185,7 @@ const InvoicePending = () => {
               <Descriptions.Item label="Người tạo">{selectedRecord.createdBy?.name || 'N/A'}</Descriptions.Item>
             </Descriptions>
             <Table 
-              columns={detailColumns} 
-              dataSource={selectedRecord.items} 
-              pagination={false} 
-              bordered size="small"
+              columns={detailColumns} dataSource={selectedRecord.items} pagination={false} bordered size="small"
               summary={(pageData) => {
                 let total = 0; pageData.forEach(({ total: t }) => { total += t; });
                 return (<Table.Summary.Row><Table.Summary.Cell index={0} colSpan={4} align="right"><Text strong>TỔNG CỘNG:</Text></Table.Summary.Cell><Table.Summary.Cell index={1}><Text type="danger" strong>{total.toLocaleString()} đ</Text></Table.Summary.Cell></Table.Summary.Row>);
