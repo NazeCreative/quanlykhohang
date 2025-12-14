@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Form, Input, Button, Card, Typography, message, Alert } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth'; // Import signOut
-import { doc, getDoc } from 'firebase/firestore'; // Import để đọc dữ liệu user
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore'; 
 import { auth, db } from '../firebase';
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -17,34 +17,30 @@ const Login = () => {
     setLoading(true);
     setErrorMsg('');
     try {
-      // 1. Đăng nhập vào Firebase Auth
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 
-      // 2. Lấy thông tin Role từ Firestore để kiểm tra
+      // Kiểm tra quyền
       const userDoc = await getDoc(doc(db, "users", user.uid));
-      
-      let role = 'unassigned'; // Mặc định nếu không tìm thấy
+      let role = 'unassigned';
       if (userDoc.exists()) {
         role = userDoc.data().role || 'unassigned';
       }
 
-      // 3. KIỂM TRA QUYỀN TRUY CẬP
       if (role === 'blocked') {
-        await signOut(auth); // Đăng xuất ngay
+        await signOut(auth);
         setErrorMsg('Tài khoản của bạn đã bị KHÓA. Vui lòng liên hệ Admin.');
         setLoading(false);
         return;
       }
 
       if (role === 'unassigned') {
-        await signOut(auth); // Đăng xuất ngay
-        setErrorMsg('Tài khoản CHƯA ĐƯỢC CẤP QUYỀN truy cập. Vui lòng liên hệ Admin duyệt tài khoản.');
+        await signOut(auth);
+        setErrorMsg('Tài khoản CHƯA ĐƯỢC CẤP QUYỀN truy cập. Vui lòng liên hệ Admin.');
         setLoading(false);
         return;
       }
 
-      // 4. Nếu quyền hợp lệ (admin, manager, employee) -> Cho vào
       message.success('Đăng nhập thành công!');
       navigate('/'); 
 
@@ -58,7 +54,7 @@ const Login = () => {
       }
       setErrorMsg(msg);
     } finally {
-      setLoading(false); // Chỉ tắt loading nếu có lỗi, còn thành công thì để nó chuyển trang
+      setLoading(false);
     }
   };
 
@@ -78,21 +74,26 @@ const Login = () => {
             name="email"
             rules={[{ required: true, message: 'Vui lòng nhập Email!' }]}
           >
-            <Input prefix={<UserOutlined />} placeholder="Email" />
+            <Input prefix={<UserOutlined />} placeholder="Email" size="large" />
           </Form.Item>
 
           <Form.Item
             name="password"
             rules={[{ required: true, message: 'Vui lòng nhập Mật khẩu!' }]}
           >
-            <Input.Password prefix={<LockOutlined />} placeholder="Mật khẩu" />
+            <Input.Password prefix={<LockOutlined />} placeholder="Mật khẩu" size="large" />
           </Form.Item>
 
+          {/* --- THÊM LINK QUÊN MẬT KHẨU --- */}
+          <div style={{ textAlign: 'right', marginBottom: 20 }}>
+            <Link to="/forgot-password" style={{ color: '#1890ff' }}>Quên mật khẩu?</Link>
+          </div>
+
           <Form.Item>
-            <Button type="primary" htmlType="submit" style={{ width: '100%' }} loading={loading}>
+            <Button type="primary" htmlType="submit" style={{ width: '100%' }} loading={loading} size="large">
               Đăng nhập
             </Button>
-            <div style={{ marginTop: 10, textAlign: 'center' }}>
+            <div style={{ marginTop: 15, textAlign: 'center' }}>
               Chưa có tài khoản? <Link to="/register">Đăng ký ngay</Link>
             </div>
           </Form.Item>
