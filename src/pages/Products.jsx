@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Typography, Button, Table, Modal, Form, Input, Select, 
-  message, Popconfirm, Space, InputNumber
+  message, Popconfirm, Space, InputNumber, Tag
 } from 'antd';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, 
@@ -11,12 +11,14 @@ import {
   collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, getDocs 
 } from 'firebase/firestore';
 import { db } from '../firebase'; 
+import { useAuth } from '../context/AuthContext'; // 1. Import Auth
 import * as XLSX from 'xlsx';
 
 const { Title } = Typography;
 const { Option } = Select;
 
 const Products = () => {
+  const { userRole } = useAuth(); // 2. Lấy quyền user
   const [form] = Form.useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -167,14 +169,21 @@ const Products = () => {
       title: 'Action',
       key: 'action',
       width: 100,
-      render: (text, record) => (
-        <Space size="middle">
-          <Button type="primary" icon={<EditOutlined />} onClick={() => showModal(record)} />
-          <Popconfirm title="Xóa?" onConfirm={() => handleDelete(record.id)}>
-            <Button type="primary" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
-        </Space>
-      ),
+      render: (text, record) => {
+        // 3. Logic: Nếu là nhân viên thì ẩn nút Sửa/Xóa
+        if (userRole === 'employee') {
+          return <Tag color="default">Chỉ xem</Tag>;
+        }
+
+        return (
+          <Space size="middle">
+            <Button type="primary" icon={<EditOutlined />} onClick={() => showModal(record)} />
+            <Popconfirm title="Xóa?" onConfirm={() => handleDelete(record.id)}>
+              <Button type="primary" danger icon={<DeleteOutlined />} />
+            </Popconfirm>
+          </Space>
+        );
+      },
     },
   ];
 
@@ -190,6 +199,7 @@ const Products = () => {
             style={{ width: 300 }} allowClear 
           />
           
+          {/* Nút Xuất Excel vẫn hiển thị cho mọi người */}
           <Button 
             onClick={handleExportExcel} 
             icon={<FileExcelOutlined />} 
@@ -198,9 +208,12 @@ const Products = () => {
             Xuất file nhập hàng
           </Button>
 
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()}>
-            Thêm sản phẩm
-          </Button>
+          {/* 4. Logic: Chỉ hiện nút Thêm nếu KHÔNG phải nhân viên */}
+          {userRole !== 'employee' && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()}>
+              Thêm sản phẩm
+            </Button>
+          )}
         </Space>
       </div>
 

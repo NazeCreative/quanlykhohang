@@ -1,32 +1,49 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../firebase'; // Import auth từ file firebase.js
-import { Spin } from 'antd'; // Thêm Spin để tạo màn hình loading
+import { doc, getDoc } from 'firebase/firestore'; 
+import { auth, db } from '../firebase'; 
+import { Spin } from 'antd';
 
-// 1. Tạo Context
 const AuthContext = createContext();
 
-// 2. Tạo "Nhà cung cấp" (Provider)
-// Provider này sẽ bọc toàn bộ ứng dụng của chúng ta
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true); // Thêm trạng thái loading
+  const [userRole, setUserRole] = useState(null); 
+  const [loading, setLoading] = useState(true);
 
-  // 3. Dùng useEffect để "lắng nghe" trạng thái đăng nhập từ Firebase
   useEffect(() => {
-    // onAuthStateChanged sẽ tự động chạy mỗi khi trạng thái đăng nhập thay đổi
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user); // user sẽ là "null" nếu chưa đăng nhập, hoặc là object "user" nếu đã đăng nhập
-      setLoading(false); // Dừng loading khi đã có thông tin user
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setCurrentUser(user);
+        
+        // --- LOGIC CHUẨN: Lấy quyền từ Firestore ---
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists()) {
+            // Lấy role từ DB, nếu không có thì mặc định là 'employee'
+            const role = userDoc.data().role || 'employee';
+            setUserRole(role);
+          } else {
+            // Trường hợp user mới đăng ký chưa kịp lưu vào DB
+            setUserRole('employee');
+          }
+        } catch (error) {
+          console.error("Lỗi lấy quyền user:", error);
+          setUserRole('employee');
+        }
+
+      } else {
+        setCurrentUser(null);
+        setUserRole(null);
+      }
+      setLoading(false);
     });
 
-    // Hủy lắng nghe khi component bị unmount
     return () => {
       unsubscribe();
     };
-  }, []); // [] nghĩa là chỉ chạy 1 lần lúc đầu
+  }, []);
 
-  // Nếu đang loading, hiển thị màn hình chờ
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -35,17 +52,13 @@ export const AuthProvider = ({ children }) => {
     );
   }
 
-  // 4. Cung cấp "giá trị" (currentUser) cho tất cả component con
   return (
-    <AuthContext.Provider value={{ currentUser }}>
+    <AuthContext.Provider value={{ currentUser, userRole }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// 5. Tạo một "hook" tùy chỉnh để dễ dàng lấy thông tin user
-// Thay vì phải import useContext và AuthContext ở mọi nơi
-// chúng ta chỉ cần gọi useAuth()
 export const useAuth = () => {
   return useContext(AuthContext);
 };

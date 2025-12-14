@@ -1,74 +1,100 @@
-import React from 'react';
-import { Form, Input, Button, Card, Typography, message } from 'antd';
-import { LockOutlined, UserOutlined } from '@ant-design/icons';
-import { Link, useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../firebase'; // Import auth từ file firebase.js
+import React, { useState } from 'react';
+import { Form, Input, Button, Card, Typography, message, Alert } from 'antd';
+import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth'; // Import signOut
+import { doc, getDoc } from 'firebase/firestore'; // Import để đọc dữ liệu user
+import { auth, db } from '../firebase';
+import { useNavigate, Link } from 'react-router-dom';
 
 const { Title } = Typography;
 
 const Login = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const onFinish = async (values) => {
+    setLoading(true);
+    setErrorMsg('');
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        values.email, // Đăng nhập bằng email
-        values.password
-      );
-      
-      // Đăng nhập thành công
+      // 1. Đăng nhập vào Firebase Auth
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
-      console.log("Đăng nhập thành công:", user);
-      message.success('Đăng nhập thành công!');
+
+      // 2. Lấy thông tin Role từ Firestore để kiểm tra
+      const userDoc = await getDoc(doc(db, "users", user.uid));
       
-      // Lưu trạng thái đăng nhập (sẽ làm ở bước sau)
-      // Tạm thời chuyển hướng thẳng
-      navigate('/'); // Chuyển về trang chủ (Dashboard)
+      let role = 'unassigned'; // Mặc định nếu không tìm thấy
+      if (userDoc.exists()) {
+        role = userDoc.data().role || 'unassigned';
+      }
+
+      // 3. KIỂM TRA QUYỀN TRUY CẬP
+      if (role === 'blocked') {
+        await signOut(auth); // Đăng xuất ngay
+        setErrorMsg('Tài khoản của bạn đã bị KHÓA. Vui lòng liên hệ Admin.');
+        setLoading(false);
+        return;
+      }
+
+      if (role === 'unassigned') {
+        await signOut(auth); // Đăng xuất ngay
+        setErrorMsg('Tài khoản CHƯA ĐƯỢC CẤP QUYỀN truy cập. Vui lòng liên hệ Admin duyệt tài khoản.');
+        setLoading(false);
+        return;
+      }
+
+      // 4. Nếu quyền hợp lệ (admin, manager, employee) -> Cho vào
+      message.success('Đăng nhập thành công!');
+      navigate('/'); 
 
     } catch (error) {
-      console.error("Lỗi khi đăng nhập:", error);
-      message.error('Email hoặc Mật khẩu không đúng.');
+      console.error("Lỗi đăng nhập:", error);
+      let msg = "Email hoặc mật khẩu không đúng!";
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        msg = "Tài khoản hoặc mật khẩu không chính xác.";
+      } else if (error.code === 'auth/too-many-requests') {
+        msg = "Đăng nhập sai quá nhiều lần. Vui lòng thử lại sau.";
+      }
+      setErrorMsg(msg);
+    } finally {
+      setLoading(false); // Chỉ tắt loading nếu có lỗi, còn thành công thì để nó chuyển trang
     }
   };
 
   return (
-    // Bạn yêu cầu background là màu, không phải hình
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#2d3748' /* Đây là một màu nền tối */ }}>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#f0f2f5', flexDirection: 'column' }}>
       <Card style={{ width: 400 }}>
-        {/* Bạn có thể thêm logo "UPCUBE" ở đây */}
-        <Title level={3} style={{ textAlign: 'center' }}>Sign In</Title>
+        <Title level={3} style={{ textAlign: 'center' }}>Đăng Nhập</Title>
+        
+        {errorMsg && <Alert message={errorMsg} type="error" showIcon style={{ marginBottom: 16 }} />}
+
         <Form
           name="login"
+          initialValues={{ remember: true }}
           onFinish={onFinish}
         >
           <Form.Item
             name="email"
             rules={[{ required: true, message: 'Vui lòng nhập Email!' }]}
           >
-            {/* Chúng ta dùng Email thay cho Username để đăng nhập */}
             <Input prefix={<UserOutlined />} placeholder="Email" />
           </Form.Item>
-          
+
           <Form.Item
             name="password"
             rules={[{ required: true, message: 'Vui lòng nhập Mật khẩu!' }]}
           >
-            <Input.Password prefix={<LockOutlined />} placeholder="Password" />
-          </Form.Item>
-          
-          <Form.Item>
-            <a href="#">Forgot your password?</a>
-            <Link to="/register" style={{ float: 'right' }}>
-              Create an account
-            </Link>
+            <Input.Password prefix={<LockOutlined />} placeholder="Mật khẩu" />
           </Form.Item>
 
           <Form.Item>
-            <Button type="primary" htmlType="submit" style={{ width: '100%', background: '#00B894', borderColor: '#00B894' }}>
-              Log In
+            <Button type="primary" htmlType="submit" style={{ width: '100%' }} loading={loading}>
+              Đăng nhập
             </Button>
+            <div style={{ marginTop: 10, textAlign: 'center' }}>
+              Chưa có tài khoản? <Link to="/register">Đăng ký ngay</Link>
+            </div>
           </Form.Item>
         </Form>
       </Card>

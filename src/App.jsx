@@ -19,6 +19,7 @@ import InvoiceList from './pages/InvoiceList';
 import InvoiceAdd from './pages/InvoiceAdd';
 import InvoicePending from './pages/InvoicePending';
 import InventoryReport from './pages/InventoryReport';
+import UserManagement from './pages/UserManagement'; // <--- MỚI THÊM
 
 // ProtectedRoute: Chỉ cho vào khi đã đăng nhập
 const ProtectedRoute = ({ children }) => {
@@ -40,7 +41,6 @@ const PublicRoute = ({ children }) => {
 
 function App() {
   return (
-    // DÒNG QUAN TRỌNG: Bọc toàn bộ ứng dụng trong <AntApp>
     <AntApp> 
       <BrowserRouter>
         <Routes>
@@ -72,10 +72,13 @@ function App() {
             <Route path="invoices/new" element={<InvoiceAdd />} />
             <Route path="invoices/pending" element={<InvoicePending />} />
             <Route path="inventory/report" element={<InventoryReport />} />
+            
+            {/* --- MỚI THÊM: Route quản lý nhân sự --- */}
+            <Route path="users" element={<UserManagement />} />
           </Route>
         </Routes>
       </BrowserRouter>
-    </AntApp> // <-- DÒNG QUAN TRỌNG
+    </AntApp>
   );
 }
 

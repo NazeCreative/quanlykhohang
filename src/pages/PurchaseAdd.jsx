@@ -9,11 +9,13 @@ import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import * as XLSX from 'xlsx';
+import { useAuth } from '../context/AuthContext'; // 1. Import Auth
 
 const { Title } = Typography;
 const { Option } = Select;
 
 const PurchaseAdd = () => {
+  const { currentUser, userRole } = useAuth(); // 2. Lấy thông tin người dùng
   const [form] = Form.useForm();
   const [productForm] = Form.useForm();
   const navigate = useNavigate();
@@ -77,18 +79,14 @@ const PurchaseAdd = () => {
     }
   };
 
-  // === IMPORT EXCEL THÔNG MINH (THEO SHEET CỦA NCC) ===
+  // === IMPORT EXCEL ===
   const handleImportExcel = (file) => {
     if (!selectedSupplier) {
       message.error("Vui lòng chọn Nhà cung cấp trước!");
       return false; 
     }
-
-    // 1. Tìm tên Nhà cung cấp hiện tại để tìm Sheet tương ứng
     const currentSupplierObj = suppliers.find(s => s.id === selectedSupplier);
     const supplierName = currentSupplierObj?.name || "";
-    
-    // Tên sheet an toàn (phải giống logic bên xuất file)
     const targetSheetName = supplierName.substring(0, 30).replace(/[\/\\\?\*\[\]]/g, "_");
 
     const reader = new FileReader();
@@ -96,13 +94,9 @@ const PurchaseAdd = () => {
       try {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
-
-        // 2. Tìm Sheet có tên trùng với NCC
         let sheetName = targetSheetName;
         if (!workbook.Sheets[sheetName]) {
-          // Nếu không tìm thấy sheet đúng tên, thử tìm sheet đầu tiên hoặc báo lỗi
-          // Ở đây ta báo lỗi để ép người dùng chọn đúng file/đúng NCC
-          message.warning(`Không tìm thấy Sheet tên "${targetSheetName}" trong file Excel. Đang thử đọc Sheet đầu tiên...`);
+          message.warning(`Không tìm thấy Sheet "${targetSheetName}". Đang đọc Sheet đầu tiên...`);
           sheetName = workbook.SheetNames[0];
         } else {
           message.info(`Đang đọc dữ liệu từ Sheet: ${sheetName}`);
@@ -110,37 +104,22 @@ const PurchaseAdd = () => {
 
         const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
         const newItems = [];
-        let skippedCount = 0;
 
         jsonData.forEach(row => {
-          // 3. Đọc dữ liệu từ các cột
           const rawName = row['Tên sản phẩm'] || row['TenSanPham'] || row['Name'];
-          
-          // Lấy Số lượng nhập (nếu ko có thì bỏ qua dòng này)
           const quantity = Number(row['Số lượng nhập'] || row['SoLuongNhap'] || 0);
-          
-          // Lấy Giá (nếu ko có thì lấy giá cũ trong DB, nếu file có thì ưu tiên file)
           let price = row['Giá'] || row['Gia'] || row['Price'];
 
-          if (!rawName || quantity <= 0) {
-            skippedCount++;
-            return; // Bỏ qua nếu không có tên hoặc số lượng <= 0
-          }
+          if (!rawName || quantity <= 0) return;
 
           const cleanName = rawName.toString().trim().toLowerCase();
-
-          // Tìm sản phẩm trong DB
           const product = products.find(p => 
             p.name.trim().toLowerCase() === cleanName &&
             p.supplierId === selectedSupplier
           );
 
           if (product) {
-            // Nếu trong file không điền giá, lấy giá nhập cũ
-            if (!price) {
-              price = product.lastImportPrice || 0;
-            }
-
+            if (!price) price = product.lastImportPrice || 0;
             newItems.push({
               key: product.id,
               productId: product.id,
@@ -155,14 +134,13 @@ const PurchaseAdd = () => {
         });
 
         if (newItems.length > 0) {
-          // Gộp vào giỏ hàng (nếu trùng thì cộng dồn)
           setCart(prev => {
             const merged = [...prev];
             newItems.forEach(newItem => {
               const existingIdx = merged.findIndex(i => i.productId === newItem.productId);
               if (existingIdx > -1) {
-                merged[existingIdx].quantity = newItem.quantity; // Excel ghi đè số lượng cũ
-                merged[existingIdx].price = newItem.price;       // Excel ghi đè giá cũ
+                merged[existingIdx].quantity = newItem.quantity;
+                merged[existingIdx].price = newItem.price;
                 merged[existingIdx].total = newItem.quantity * newItem.price;
               } else {
                 merged.push(newItem);
@@ -170,11 +148,10 @@ const PurchaseAdd = () => {
             });
             return merged;
           });
-          message.success(`Đã thêm ${newItems.length} sản phẩm từ Sheet "${sheetName}"!`);
+          message.success(`Đã thêm ${newItems.length} sản phẩm!`);
         } else {
-          message.warning("Không có sản phẩm nào được nhập (Kiểm tra cột 'Số lượng nhập' trong Excel).");
+          message.warning("Không có sản phẩm hợp lệ trong file Excel.");
         }
-
       } catch (error) { 
         console.error(error);
         message.error("Lỗi đọc file Excel."); 
@@ -184,7 +161,6 @@ const PurchaseAdd = () => {
     return false;
   };
 
-  // ... (Phần còn lại giữ nguyên) ...
   const onAddProductToCart = (values) => {
     const product = products.find(p => p.id === values.productId);
     setCart([...cart, {
@@ -217,6 +193,12 @@ const PurchaseAdd = () => {
         items: cart,
         grandTotal: grandTotal,
         status: "pending", 
+        // 3. LƯU THÔNG TIN NGƯỜI TẠO
+        createdBy: {
+          name: currentUser?.displayName || 'Unknown',
+          role: userRole || 'employee',
+          uid: currentUser?.uid
+        }
       });
       message.success('Tạo đơn hàng thành công!');
       navigate('/purchases/list');

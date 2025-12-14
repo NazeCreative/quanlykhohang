@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Typography, Button, Table, Tag, Space, Popconfirm, message, Modal, Descriptions, Divider, Input // <-- Import Input
+  Typography, Button, Table, Tag, Space, Popconfirm, message, Modal, Descriptions, Divider, Input 
 } from 'antd';
-import { PlusOutlined, DeleteOutlined, EyeOutlined, PrinterOutlined, SearchOutlined } from '@ant-design/icons'; // <-- Import SearchOutlined
+import { PlusOutlined, DeleteOutlined, EyeOutlined, PrinterOutlined, SearchOutlined } from '@ant-design/icons'; 
 import { collection, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
+import { useAuth } from '../context/AuthContext'; // Import Auth
 
 const { Title, Text } = Typography;
 
 const InvoiceList = () => {
+  const { userRole } = useAuth(); // Lấy quyền
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [searchText, setSearchText] = useState(''); // State tìm kiếm
+  const [searchText, setSearchText] = useState(''); 
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -37,13 +39,12 @@ const InvoiceList = () => {
   const handleViewDetail = (record) => { setSelectedInvoice(record); setIsModalOpen(true); };
   const handlePrint = () => { window.print(); };
 
-  // --- LOGIC LỌC ---
   const filteredData = invoices.filter(item => {
     const text = searchText.toLowerCase();
     return (
-      (item.invoiceNo || '').toLowerCase().includes(text) || // Tìm Mã HĐ
-      (item.customerName || '').toLowerCase().includes(text) || // Tìm Khách hàng
-      (item.date || '').includes(text) // Tìm Ngày
+      (item.invoiceNo || '').toLowerCase().includes(text) || 
+      (item.customerName || '').toLowerCase().includes(text) || 
+      (item.date || '').includes(text) 
     );
   });
 
@@ -52,13 +53,35 @@ const InvoiceList = () => {
     { title: 'Ngày', dataIndex: 'date', key: 'date', render: d => dayjs(d).format('DD/MM/YYYY') },
     { title: 'Khách hàng', dataIndex: 'customerName', key: 'customerName' },
     { title: 'Tổng tiền', dataIndex: 'grandTotal', key: 'grandTotal', align: 'right', render: v => <Text type="danger" strong>{v?.toLocaleString()} đ</Text> },
+    {
+        // === CỘT MỚI: NGƯỜI THỰC HIỆN ===
+        title: 'Người thực hiện',
+        key: 'createdBy',
+        render: (_, record) => {
+            if (!record.createdBy) return <Text type="secondary">N/A</Text>;
+            let roleName = 'Nhân viên';
+            let color = 'default';
+            if (record.createdBy.role === 'admin') { roleName = 'Admin'; color = 'red'; }
+            else if (record.createdBy.role === 'manager') { roleName = 'Quản lí'; color = 'gold'; }
+            
+            return (
+                <Space direction="vertical" size={0}>
+                    <Text strong>{record.createdBy.name}</Text>
+                    <Tag color={color} style={{marginRight: 0}}>{roleName}</Tag>
+                </Space>
+            );
+        }
+    },
     { title: 'Trạng thái', dataIndex: 'status', key: 'status', align: 'center', render: s => <Tag color={s === 'approved' ? 'green' : 'orange'}>{s === 'approved' ? 'Đã duyệt' : 'Chờ duyệt'}</Tag> },
     {
       title: 'Action', key: 'action', align: 'center',
       render: (_, record) => (
         <Space>
           <Button type="primary" ghost icon={<EyeOutlined />} onClick={() => handleViewDetail(record)} />
-          <Popconfirm title="Xóa?" onConfirm={() => handleDelete(record.id)}><Button danger icon={<DeleteOutlined />} /></Popconfirm>
+          {/* === LOGIC: Ẩn nút Xóa nếu là nhân viên === */}
+          {userRole !== 'employee' && (
+            <Popconfirm title="Xóa?" onConfirm={() => handleDelete(record.id)}><Button danger icon={<DeleteOutlined />} /></Popconfirm>
+          )}
         </Space>
       )
     }
@@ -105,6 +128,7 @@ const InvoiceList = () => {
               <Descriptions.Item label="Ngày lập">{dayjs(selectedInvoice.date).format('DD/MM/YYYY')}</Descriptions.Item>
               <Descriptions.Item label="Thanh toán">{selectedInvoice.paymentMethod}</Descriptions.Item>
               <Descriptions.Item label="Trạng thái">{selectedInvoice.status === 'approved' ? 'Đã thanh toán' : 'Chờ xử lý'}</Descriptions.Item>
+              <Descriptions.Item label="Người tạo">{selectedInvoice.createdBy?.name || 'N/A'}</Descriptions.Item>
               <Descriptions.Item label="Ghi chú" span={2}>{selectedInvoice.note || 'Không có'}</Descriptions.Item>
             </Descriptions>
             <Divider orientation="left">Chi tiết sản phẩm</Divider>
