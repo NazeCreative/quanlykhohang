@@ -5,12 +5,12 @@ import {
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { useAuth } from '../context/AuthContext'; // Import Auth
+import { useAuth } from '../context/AuthContext'; 
 
 const { Title } = Typography;
 
 const Suppliers = () => {
-  const { userRole } = useAuth(); // Lấy quyền user
+  const { userRole } = useAuth(); 
   const [form] = Form.useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState(null);
@@ -35,9 +35,11 @@ const Suppliers = () => {
   const handleFinish = async (values) => {
     try {
       if (editingSupplier) {
+        // Nhân viên không sửa được (đã bị chặn ở UI và Rules)
         await updateDoc(doc(db, 'suppliers', editingSupplier.id), values);
         message.success('Cập nhật thành công!');
       } else {
+        // Nhân viên ĐƯỢC PHÉP thêm mới
         await addDoc(collection(db, 'suppliers'), values);
         message.success('Thêm mới thành công!');
       }
@@ -84,7 +86,7 @@ const Suppliers = () => {
       key: 'action',
       width: 150,
       render: (_, record) => {
-        // Nếu là nhân viên thì không hiện nút Sửa/Xóa
+        // Vẫn chặn Sửa/Xóa đối với nhân viên
         if (userRole === 'employee') return <Tag color="default">Chỉ xem</Tag>;
 
         return (
@@ -103,12 +105,10 @@ const Suppliers = () => {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <Title level={2}>Danh sách Nhà cung cấp</Title>
-        {/* Chỉ hiện nút Thêm nếu KHÔNG phải là nhân viên */}
-        {userRole !== 'employee' && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()}>
-            Thêm mới
-          </Button>
-        )}
+        {/* ĐÃ SỬA: Luôn hiện nút Thêm mới cho tất cả mọi người */}
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()}>
+          Thêm mới
+        </Button>
       </div>
 
       <Table columns={columns} dataSource={suppliers} loading={loading} bordered />

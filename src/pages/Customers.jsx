@@ -5,12 +5,12 @@ import {
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from "../firebase";
-import { useAuth } from "../context/AuthContext"; // Import Auth
+import { useAuth } from "../context/AuthContext"; 
 
 const { Title } = Typography;
 
 const Customers = () => {
-  const { userRole } = useAuth(); // Lấy quyền
+  const { userRole } = useAuth(); 
   const [form] = Form.useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
@@ -38,6 +38,7 @@ const Customers = () => {
         await updateDoc(doc(db, "customers", editingCustomer.id), values);
         message.success("Cập nhật thành công!");
       } else {
+        // Nhân viên được phép thêm
         await addDoc(collection(db, "customers"), values);
         message.success("Thêm mới thành công!");
       }
@@ -83,7 +84,7 @@ const Customers = () => {
       key: "action",
       width: 150,
       render: (_, record) => {
-        // Chặn quyền nhân viên
+        // Vẫn chặn Sửa/Xóa đối với nhân viên
         if (userRole === 'employee') return <Tag color="default">Chỉ xem</Tag>;
 
         return (
@@ -102,12 +103,10 @@ const Customers = () => {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
         <Title level={2}>Danh sách Khách hàng</Title>
-        {/* Chặn quyền nhân viên */}
-        {userRole !== 'employee' && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()}>
-            Thêm mới
-          </Button>
-        )}
+        {/* ĐÃ SỬA: Luôn hiện nút Thêm mới cho tất cả mọi người */}
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()}>
+          Thêm mới
+        </Button>
       </div>
 
       <Table columns={columns} dataSource={customers} loading={loading} bordered />
