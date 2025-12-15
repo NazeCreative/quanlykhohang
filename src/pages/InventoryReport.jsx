@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Typography,
   Button,
@@ -10,8 +10,6 @@ import {
 } from 'antd';
 import { 
   PrinterOutlined, 
-  ArrowUpOutlined,
-  ArrowDownOutlined,
   SearchOutlined
 } from '@ant-design/icons';
 import { collection, onSnapshot } from 'firebase/firestore';
@@ -24,38 +22,21 @@ const InventoryReport = () => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
-  const prevQuantitiesRef = useRef({});
+  // Đã xóa phần useRef và logic tính toán trend (xu hướng tăng giảm)
 
   useEffect(() => {
     setLoading(true);
+    // Lắng nghe dữ liệu realtime từ Firestore
     const unsubscribe = onSnapshot(collection(db, 'products'), (snapshot) => {
       const currentData = snapshot.docs.map((doc, index) => {
         const data = doc.data();
-        const currentQty = Number(data.quantity) || 0;
-        const id = doc.id;
-
-        const prevQty = prevQuantitiesRef.current[id] !== undefined 
-                        ? prevQuantitiesRef.current[id] 
-                        : currentQty;
-
-        let trend = 'stable';
-        if (currentQty > prevQty) trend = 'up';
-        if (currentQty < prevQty) trend = 'down';
-
         return {
-          id: id,
-          key: id,
+          id: doc.id,
+          key: doc.id,
           stt: index + 1,
-          ...data,
-          trend: trend
+          ...data
         };
       });
-
-      const newQuantitiesMap = {};
-      currentData.forEach(item => {
-        newQuantitiesMap[item.id] = item.quantity;
-      });
-      prevQuantitiesRef.current = newQuantitiesMap;
 
       setInventory(currentData);
       setLoading(false);
@@ -68,6 +49,7 @@ const InventoryReport = () => {
     window.print();
   };
 
+  // Logic tìm kiếm
   const filteredData = inventory.filter(item => {
     const text = searchTerm.toLowerCase();
     return (
@@ -89,35 +71,27 @@ const InventoryReport = () => {
       key: 'quantity',
       align: 'center',
       sorter: (a, b) => a.quantity - b.quantity,
-      render: (qty, record) => {
+      render: (qty) => {
         // --- 1. Mặc định ---
         let color = '#000000'; 
         let borderColor = '#d9d9d9'; 
         let backgroundColor = '#fafafa'; 
         
-        // --- SỬA Ở ĐÂY: Mặc định icon là null (không hiện gì) ---
-        let icon = null; 
-
         // --- 2. LOGIC MÀU SẮC (Xanh, Vàng, Đỏ) ---
-        if (qty > 20) {
-          color = '#3f8600'; 
+        // Giữ nguyên logic màu sắc để cảnh báo
+        const numQty = Number(qty); // Đảm bảo là số
+        if (numQty > 20) {
+          color = '#3f8600'; // Xanh lá
           borderColor = '#b7eb8f'; 
           backgroundColor = '#f6ffed'; 
-        } else if (qty > 10) { 
-          color = '#faad14'; 
+        } else if (numQty > 10) { 
+          color = '#faad14'; // Vàng
           borderColor = '#ffe58f'; 
           backgroundColor = '#fffbe6'; 
         } else {
-          color = '#cf1322'; 
+          color = '#cf1322'; // Đỏ
           borderColor = '#ffa39e'; 
           backgroundColor = '#fff1f0'; 
-        }
-
-        // --- 3. LOGIC MŨI TÊN (Chỉ hiện khi có thay đổi) ---
-        if (record.trend === 'up') {
-          icon = <ArrowUpOutlined style={{ fontSize: '10px' }} />;
-        } else if (record.trend === 'down') {
-          icon = <ArrowDownOutlined style={{ fontSize: '10px' }} />;
         }
 
         return (
@@ -133,12 +107,10 @@ const InventoryReport = () => {
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 5,
               minWidth: 60
             }}
           >
             <span style={{ fontWeight: 600 }}>{qty}</span>
-            {icon}
           </Tag>
         );
       },
@@ -175,6 +147,7 @@ const InventoryReport = () => {
         </Card>
       </div>
 
+      {/* Phần này chỉ hiện khi in (Ctrl + P) */}
       <div className="print-only">
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
           <Title level={3}>BÁO CÁO TỒN KHO CHI TIẾT</Title>
