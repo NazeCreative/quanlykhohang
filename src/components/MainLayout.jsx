@@ -3,7 +3,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   DashboardOutlined,
-  TeamOutlined,
+  TeamOutlined, // <-- Icon cho quản lý nhân sự
   UserOutlined,
   AppstoreOutlined,
   ShopOutlined,
@@ -15,8 +15,8 @@ import {
 } from '@ant-design/icons';
 import { Layout, Menu, Button, Dropdown, Avatar, Space, Typography } from 'antd';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { auth } from '../firebase';
+import { useAuth } from '../context/AuthContext'; // Lấy thông tin user & role
+import { auth } from '../firebase'; 
 import { signOut } from 'firebase/auth';
 
 const { Header, Sider, Content } = Layout;
@@ -24,7 +24,10 @@ const { Text } = Typography;
 
 const MainLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
-  const { currentUser, userRole } = useAuth();
+  
+  // Lấy thêm userRole từ AuthContext để phân quyền
+  const { currentUser, userRole } = useAuth(); 
+  
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -36,52 +39,11 @@ const MainLayout = () => {
     }
   };
 
-  // Định nghĩa Menu
-  const menuItems = [
-    { key: '/', icon: <DashboardOutlined />, label: <Link to="/">Dashboard</Link> },
-    { key: '/suppliers', icon: <ShopOutlined />, label: <Link to="/suppliers">Nhà cung cấp</Link> },
-    { key: '/customers', icon: <UserOutlined />, label: <Link to="/customers">Khách hàng</Link> },
-    { key: '/units', icon: <AppstoreOutlined />, label: <Link to="/units">Đơn vị</Link> },
-    { key: '/categories', icon: <AppstoreOutlined />, label: <Link to="/categories">Danh mục</Link> },
-    { key: '/products', icon: <DropboxOutlined />, label: <Link to="/products">Sản phẩm</Link> },
-    { 
-      key: 'purchases', 
-      icon: <ShoppingCartOutlined />, 
-      label: 'Quản lý đơn nhập', // SỬA TÊN MỤC
-      children: [
-        { key: '/purchases/list', label: <Link to="/purchases/list">Danh sách đơn nhập</Link> }, // SỬA TÊN
-        { key: '/purchases/pending', label: <Link to="/purchases/pending">Xác nhận đơn nhập</Link> }, // SỬA TÊN
-      ]
-    },
-    { 
-      key: 'invoices', 
-      icon: <FileDoneOutlined />, 
-      label: 'Quản lý đơn xuất', // SỬA TÊN MỤC
-      children: [
-        { key: '/invoices/list', label: <Link to="/invoices/list">Danh sách đơn xuất</Link> }, // SỬA TÊN
-        { key: '/invoices/pending', label: <Link to="/invoices/pending">Phê duyệt đơn xuất</Link> }, // SỬA TÊN
-      ]
-    },
-    { 
-      key: 'inventory', 
-      icon: <AccountBookOutlined />, 
-      label: 'Quản lý tồn kho',
-      children: [
-        { key: '/inventory/report', label: <Link to="/inventory/report">Báo cáo tồn kho</Link> },
-      ]
-    },
-    // --- Chỉ hiển thị nếu là Admin hoặc Manager ---
-    (userRole === 'admin' || userRole === 'manager') ? {
-      key: '/users',
-      icon: <TeamOutlined />,
-      label: <Link to="/users">Quản lý nhân sự</Link>
-    } : null,
-  ];
-
+  // Menu cho Dropdown tài khoản ở góc phải
   const userMenuItems = [
     {
       key: '1',
-      label: <div>Chức vụ: <strong>{userRole?.toUpperCase()}</strong></div>,
+      label: 'Thông tin tài khoản',
     },
     {
       key: '2',
@@ -92,8 +54,54 @@ const MainLayout = () => {
     },
   ];
 
+  // --- MENU CHÍNH (ĐƯỢC CẤU HÌNH ĐỘNG DỰA THEO QUYỀN) ---
+  const menuItems = [
+    { key: '/', icon: <DashboardOutlined />, label: <Link to="/">Dashboard</Link> },
+    
+    // --- LOGIC QUAN TRỌNG: Chỉ Admin mới thấy menu này ---
+    ...(userRole === 'admin' ? [{
+      key: '/users',
+      icon: <TeamOutlined />,
+      label: <Link to="/users">Quản lý nhân sự</Link>
+    }] : []),
+    // -----------------------------------------------------
+
+    { key: '/suppliers', icon: <ShopOutlined />, label: <Link to="/suppliers">Nhà cung cấp</Link> },
+    { key: '/customers', icon: <UserOutlined />, label: <Link to="/customers">Khách hàng</Link> },
+    { key: '/units', icon: <AppstoreOutlined />, label: <Link to="/units">Đơn vị</Link> },
+    { key: '/categories', icon: <AppstoreOutlined />, label: <Link to="/categories">Danh mục</Link> },
+    { key: '/products', icon: <DropboxOutlined />, label: <Link to="/products">Sản phẩm</Link> },
+    { 
+      key: 'purchases', 
+      icon: <ShoppingCartOutlined />, 
+      label: 'Đơn hàng',
+      children: [
+        { key: '/purchases/list', label: <Link to="/purchases/list">Đơn hàng</Link> },
+        { key: '/purchases/pending', label: <Link to="/purchases/pending">Xác nhận đơn hàng</Link> },
+      ]
+    },
+    { 
+      key: 'invoices', 
+      icon: <FileDoneOutlined />, 
+      label: 'Quản lý hóa đơn',
+      children: [
+        { key: '/invoices/list', label: <Link to="/invoices/list">Danh sách hóa đơn</Link> },
+        { key: '/invoices/pending', label: <Link to="/invoices/pending">Phê duyệt hóa đơn</Link> },
+      ]
+    },
+    { 
+      key: 'inventory', 
+      icon: <AccountBookOutlined />, 
+      label: 'Quản lý tồn kho',
+      children: [
+        { key: '/inventory/report', label: <Link to="/inventory/report">Báo cáo tồn kho</Link> },
+      ]
+    },
+  ];
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
+      {/* THANH MENU BÊN TRÁI (SIDER) */}
       <Sider trigger={null} collapsible collapsed={collapsed} style={{ background: '#001529' }}>
         <div style={{ height: '32px', margin: '16px', color: 'white', textAlign: 'center', fontSize: '18px', fontWeight: 'bold' }}>
           {collapsed ? 'QLK' : 'WEB KHO HÀNG'}
@@ -102,12 +110,13 @@ const MainLayout = () => {
           theme="dark"
           mode="inline"
           defaultSelectedKeys={['/']}
-          items={menuItems}
+          items={menuItems} // Menu đã được lọc theo quyền
           style={{ background: '#001529' }}
         />
       </Sider>
 
       <Layout>
+        {/* THANH HEADER BÊN TRÊN */}
         <Header style={{ padding: '0 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff' }}>
           <Button
             type="text"
@@ -119,17 +128,14 @@ const MainLayout = () => {
             <a onClick={(e) => e.preventDefault()}>
               <Space>
                 <Avatar icon={<UserOutlined />} />
-                <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.2' }}>
-                  <Text strong>{currentUser?.displayName || 'User'}</Text>
-                  <Text type="secondary" style={{ fontSize: '11px' }}>
-                     {userRole === 'admin' ? 'Quản trị viên' : userRole === 'manager' ? 'Quản lí' : 'Nhân viên'}
-                  </Text>
-                </div>
+                <Text strong>{currentUser?.displayName || 'User'}</Text>
+                {/* Có thể hiển thị thêm Role nếu thích: <Tag>{userRole}</Tag> */}
               </Space>
             </a>
           </Dropdown>
         </Header>
 
+        {/* PHẦN NỘI DUNG CHÍNH (CONTENT) */}
         <Content
           style={{
             margin: '24px 16px',

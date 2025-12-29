@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore'; 
+import { doc, getDoc } from 'firebase/firestore'; // <-- Thêm import này
 import { auth, db } from '../firebase'; 
 import { Spin } from 'antd';
 
@@ -8,30 +8,25 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
-  const [userRole, setUserRole] = useState(null); 
+  const [userRole, setUserRole] = useState(null); // <-- Thêm state lưu quyền
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setCurrentUser(user);
-        
-        // --- LOGIC CHUẨN: Lấy quyền từ Firestore ---
+        // --- LOGIC MỚI: Lấy quyền (role) từ Firestore ---
         try {
           const userDoc = await getDoc(doc(db, "users", user.uid));
           if (userDoc.exists()) {
-            // Lấy role từ DB, nếu không có thì mặc định là 'employee'
-            const role = userDoc.data().role || 'employee';
-            setUserRole(role);
+            setUserRole(userDoc.data().role); // Lưu role (admin/manager/employee)
           } else {
-            // Trường hợp user mới đăng ký chưa kịp lưu vào DB
-            setUserRole('employee');
+            setUserRole('employee'); // Mặc định nếu chưa có quyền
           }
         } catch (error) {
-          console.error("Lỗi lấy quyền user:", error);
-          setUserRole('employee');
+          console.error("Lỗi lấy quyền:", error);
+          setUserRole(null);
         }
-
       } else {
         setCurrentUser(null);
         setUserRole(null);
@@ -39,9 +34,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     });
 
-    return () => {
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
 
   if (loading) {
@@ -52,6 +45,7 @@ export const AuthProvider = ({ children }) => {
     );
   }
 
+  // Truyền thêm userRole ra ngoài
   return (
     <AuthContext.Provider value={{ currentUser, userRole }}>
       {children}
