@@ -1,16 +1,59 @@
-# React + Vite
+# 📦 Hệ Thống Web Quản Lý Kho Hàng (Inventory Management System)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> **Đồ án Thực tập Tốt nghiệp**
+>
+> Xây dựng hệ thống quản lý kho hàng trực tuyến hiện đại, hỗ trợ quy trình nhập/xuất kho chặt chẽ, báo cáo tồn kho thời gian thực và phân quyền người dùng chi tiết.
 
-Currently, two official plugins are available:
+## 🌟 Giới thiệu
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Dự án là một ứng dụng web (Single Page Application - SPA) giúp doanh nghiệp quản lý toàn diện quy trình kho vận. Hệ thống tập trung vào tính bảo mật, quy trình phê duyệt đơn hàng minh bạch và giao diện người dùng thân thiện.
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🚀 Tính năng nổi bật
 
-## Expanding the ESLint configuration
+### 1. Quản lý Tổng quan (Dashboard)
+- Hiển thị thống kê nhanh về tình hình kinh doanh và kho bãi.
+- Biểu đồ trực quan giúp nắm bắt xu hướng nhập/xuất.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 2. Quản lý Danh mục & Sản phẩm
+- **Sản phẩm:** Quản lý thông tin chi tiết, hình ảnh, giá vốn, giá bán.
+- **Thuộc tính:** Quản lý Nhà cung cấp, Khách hàng, Đơn vị tính, Danh mục sản phẩm.
+
+### 3. Quy trình Nhập & Xuất (Có phê duyệt)
+Hệ thống áp dụng quy trình kiểm soát chặt chẽ "Maker - Checker":
+- **Nhập hàng (Purchase):** Nhân viên tạo đơn nhập -> Quản lý duyệt -> Tăng tồn kho.
+- **Xuất hàng (Invoice):** Nhân viên tạo hóa đơn -> Quản lý duyệt -> Trừ tồn kho.
+- **Trạng thái:** Theo dõi đơn hàng qua các trạng thái: *Chờ duyệt (Pending)* và *Đã duyệt*.
+
+### 4. Báo cáo Tồn kho Thông minh
+- Theo dõi số lượng tồn kho theo thời gian thực (Real-time).
+- Hỗ trợ in ấn báo cáo trực tiếp.
+
+### 5. Quản trị Hệ thống & Phân quyền (RBAC)
+Hệ thống phân quyền chi tiết 3 cấp độ bảo mật:
+- 🔴 **Admin:** Quyền cao nhất, quản lý tài khoản nhân viên, truy cập mọi chức năng.
+- 🟡 **Manager (Quản lí):** Phê duyệt đơn hàng, xem báo cáo (Giới hạn duy nhất 1 Quản lí trong hệ thống).
+- 🔵 **Employee (Nhân viên):** Thực hiện thao tác nhập liệu, tạo đơn hàng.
+
+---
+
+## 🛠️ Công nghệ sử dụng
+
+- **Frontend:** [React.js](https://reactjs.org/) (Vite Build Tool) - Tốc độ cao.
+- **UI Library:** [Ant Design (Antd)](https://ant.design/) - Giao diện chuyên nghiệp, UX tốt.
+- **Routing:** React Router DOM v6.
+- **Backend / Database:** [Google Firebase](https://firebase.google.com/)
+    - **Authentication:** Đăng nhập/Đăng ký bảo mật.
+    - **Firestore:** Cơ sở dữ liệu NoSQL thời gian thực.
+
+---
+
+## ⚙️ Hướng dẫn Cài đặt & Chạy dự án
+
+### Bước 1: Clone dự án
+```bash
+git clone [https://github.com/username/quanlykhohang.git](https://github.com/username/quanlykhohang.git)
+cd quanlykhohang
+### Bước 2: Cài đặt thư viện
+Yêu cầu máy tính đã cài đặt Node.js.
