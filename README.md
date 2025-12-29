@@ -72,3 +72,24 @@ Thực hiện các bước sau để chạy dự án dưới máy local (Yêu c�
 ```bash
 git clone [https://github.com/username/quanlykhohang.git](https://github.com/username/quanlykhohang.git)
 cd quanlykhohang
+```
+### Bước 2: Cài đặt thư viện
+```bash
+npm install
+```
+### Bước 3: Cấu hình môi trường
+Tạo file .env tại thư mục gốc của dự án và điền thông tin cấu hình Firebase của bạn:
+```
+VITE_FIREBASE_API_KEY=your_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project_id.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+```
+⚠️ Lưu ý: Không public file .env hoặc để lộ API Key lên GitHub.
+### Bước 4: Chạy dự án
+```bash
+npm run dev
+```
+Truy cập trình duyệt tại đường dẫn: 👉 http://localhost:5173
