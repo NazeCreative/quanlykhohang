@@ -65,6 +65,14 @@ Trạng thái đơn hàng:
 
 Theo dõi tồn kho thời gian thực
 
+Cảnh báo trực quan bằng màu sắc:
+
+🟢 Xanh: Tồn kho an toàn (> 20)
+
+🟡 Vàng: Tồn kho thấp (10 – 20)
+
+🔴 Đỏ: Nguy hiểm (< 10)
+
 Hỗ trợ in báo cáo trực tiếp từ trình duyệt
 
 5️⃣ Quản trị hệ thống & Phân quyền (RBAC)
@@ -84,6 +92,8 @@ Truy cập toàn bộ chức năng
 Phê duyệt đơn nhập/xuất
 
 Xem báo cáo
+
+Giới hạn: chỉ 1 Manager trong hệ thống
 
 🔵 Employee (Nhân viên)
 
