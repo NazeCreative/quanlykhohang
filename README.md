@@ -1,158 +1,74 @@
-📦 Hệ Thống Web Quản Lý Kho Hàng
+# 📦 Hệ Thống Web Quản Lý Kho Hàng (Inventory Management System)
 
-Inventory Management System
+> **Đồ án Thực tập Tốt nghiệp** > Ứng dụng web Single Page Application (SPA) hỗ trợ quản lý toàn diện quy trình kho vận, theo dõi tồn kho thời gian thực và phân quyền chặt chẽ.
 
-Đồ án Thực tập Tốt nghiệp
-Ứng dụng web quản lý kho hàng trực tuyến, hỗ trợ quy trình nhập/xuất kho có phê duyệt, theo dõi tồn kho thời gian thực và phân quyền người dùng rõ ràng.
+## 🌟 Giới thiệu
 
-🌟 Giới thiệu
+Hệ thống được xây dựng nhằm giải quyết bài toán quản lý kho hàng cho doanh nghiệp vừa và nhỏ. Ứng dụng tập trung vào tính chính xác của số liệu thông qua quy trình phê duyệt 2 bước (Maker - Checker), giao diện trực quan và khả năng báo cáo tức thì.
 
-Hệ thống là một Single Page Application (SPA) giúp doanh nghiệp quản lý toàn diện hoạt động kho vận.
-Ứng dụng tập trung vào:
+**Điểm mạnh chính:**
+* 🛡️ **Quy trình chặt chẽ:** Cơ chế phê duyệt Nhập/Xuất kho minh bạch.
+* 🔐 **Bảo mật cao:** Phân quyền người dùng (RBAC) rõ ràng.
+* ⚡ **Real-time:** Cập nhật dữ liệu tồn kho tức thì với Firestore.
+* 🎨 **UI/UX hiện đại:** Giao diện Ant Design thân thiện, dễ sử dụng.
 
-Quy trình nhập/xuất kho chặt chẽ
+---
 
-Bảo mật và phân quyền người dùng
+## 🚀 Tính năng nổi bật
 
-Giao diện hiện đại, dễ sử dụng
+### 1️⃣ Dashboard – Quản lý tổng quan
+* Thống kê nhanh tình hình nhập/xuất kho trong ngày/tháng.
+* Biểu đồ trực quan (Chart) giúp theo dõi xu hướng kinh doanh và biến động kho.
 
-🚀 Tính năng nổi bật
-1️⃣ Dashboard – Quản lý tổng quan
+### 2️⃣ Quản lý Danh mục & Sản phẩm
+* **Thông tin chi tiết:** Tên, hình ảnh, giá vốn, giá bán, số lượng tồn.
+* **Phân loại:** Quản lý theo Nhà cung cấp, Khách hàng, Đơn vị tính và Danh mục sản phẩm.
 
-Thống kê nhanh tình hình nhập/xuất kho
+### 3️⃣ Quy trình Nhập & Xuất kho (Maker – Checker)
+Áp dụng quy trình kiểm soát 2 bước để hạn chế sai sót:
 
-Biểu đồ trực quan giúp theo dõi xu hướng kinh doanh
+* **Nhập hàng (Purchase Order):**
+    `Nhân viên tạo đơn` ➡️ `Quản lý duyệt` ➡️ `Hệ thống tăng tồn kho`
+* **Xuất hàng (Invoice):**
+    `Nhân viên tạo hóa đơn` ➡️ `Quản lý duyệt` ➡️ `Hệ thống trừ tồn kho`
+* **Trạng thái đơn:**
+    * ⏳ **Pending:** Chờ duyệt.
+    * ✅ **Approved:** Đã duyệt (Hoàn tất).
 
-2️⃣ Quản lý Danh mục & Sản phẩm
+### 4️⃣ Báo cáo tồn kho thông minh
+Hệ thống cảnh báo tồn kho bằng màu sắc trực quan (Traffic Light System):
+### 5️⃣ Phân quyền hệ thống (RBAC)
 
-Sản phẩm:
+| Vai trò (Role) | Mô tả & Quyền hạn |
+| :--- | :--- |
+| **🔴 Admin** | Quyền cao nhất. Quản lý tài khoản người dùng (Thêm/Sửa/Xóa/Phân quyền). |
+| **🟡 Manager** | Quản lý kho. Phê duyệt đơn nhập/xuất, xem báo cáo thống kê. *(Giới hạn: 1 người)* |
+| **🔵 Employee** | Nhân viên kho. Tạo đơn nhập/xuất, nhập dữ liệu cơ bản. |
 
-Tên sản phẩm
+---
 
-Hình ảnh
+## 🛠️ Công nghệ sử dụng
 
-Giá vốn, giá bán
+Dự án được xây dựng trên nền tảng công nghệ hiện đại, tối ưu hiệu năng:
 
-Số lượng tồn kho
+**Frontend:**
+* ![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB) **React.js**
+* ![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat&logo=vite&logoColor=white) **Vite** (Build Tool)
+* ![Ant Design](https://img.shields.io/badge/Ant%20Design-0170FE?style=flat&logo=antdesign&logoColor=white) **Ant Design** (UI Framework)
+* **React Router DOM v6**
 
-Danh mục & Thuộc tính:
+**Backend & Database:**
+* ![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=flat&logo=firebase&logoColor=black) **Google Firebase**
+* **Firebase Authentication** (Xác thực người dùng)
+* **Cloud Firestore** (NoSQL Database - Realtime)
 
-Nhà cung cấp
+---
 
-Khách hàng
+## ⚙️ Hướng dẫn cài đặt & Chạy dự án
 
-Đơn vị tính
+Thực hiện các bước sau để chạy dự án dưới máy local (Yêu cầu đã cài đặt **Node.js**).
 
-Danh mục sản phẩm
-
-3️⃣ Quy trình Nhập & Xuất kho (Maker – Checker)
-
-Áp dụng quy trình kiểm soát 2 bước nhằm hạn chế sai sót:
-
-Nhập hàng (Purchase Order)
-Nhân viên tạo đơn → Quản lý duyệt → Tăng tồn kho
-
-Xuất hàng (Invoice)
-Nhân viên tạo hóa đơn → Quản lý duyệt → Trừ tồn kho
-
-Trạng thái đơn hàng:
-
-⏳ Pending (Chờ duyệt)
-
-✅ Approved (Đã duyệt)
-
-4️⃣ Báo cáo tồn kho thông minh (Real-time)
-
-Theo dõi tồn kho thời gian thực
-
-Cảnh báo trực quan bằng màu sắc:
-
-🟢 Xanh: Tồn kho an toàn (> 20)
-
-🟡 Vàng: Tồn kho thấp (10 – 20)
-
-🔴 Đỏ: Nguy hiểm (< 10)
-
-Hỗ trợ in báo cáo trực tiếp từ trình duyệt
-
-5️⃣ Quản trị hệ thống & Phân quyền (RBAC)
-
-Hệ thống phân quyền theo vai trò:
-
-🔴 Admin
-
-Quyền cao nhất
-
-Quản lý tài khoản người dùng
-
-Truy cập toàn bộ chức năng
-
-🟡 Manager (Quản lý)
-
-Phê duyệt đơn nhập/xuất
-
-Xem báo cáo
-
-Giới hạn: chỉ 1 Manager trong hệ thống
-
-🔵 Employee (Nhân viên)
-
-Tạo đơn nhập/xuất
-
-Nhập dữ liệu cơ bản
-
-🛠️ Công nghệ sử dụng
-
-Frontend:
-
-React.js
-
-Vite (Build Tool)
-
-UI Framework:
-
-Ant Design (Antd)
-
-Routing:
-
-React Router DOM v6
-
-Backend & Database:
-
-Google Firebase
-
-Firebase Authentication
-
-Firestore (NoSQL – Real-time)
-
-⚙️ Hướng dẫn cài đặt & chạy dự án
-🔹 Bước 1: Clone repository
-git clone https://github.com/username/quanlykhohang.git
+### Bước 1: Clone repository
+```bash
+git clone [https://github.com/username/quanlykhohang.git](https://github.com/username/quanlykhohang.git)
 cd quanlykhohang
-
-🔹 Bước 2: Cài đặt thư viện
-
-Yêu cầu: đã cài Node.js
-
-npm install
-
-🔹 Bước 3: Cấu hình môi trường
-
-Tạo file .env tại thư mục gốc và điền thông tin Firebase:
-
-VITE_FIREBASE_API_KEY=your_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_STORAGE_BUCKET=your_project_id.firebasestorage.app
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-VITE_FIREBASE_APP_ID=your_app_id
-
-
-⚠️ Lưu ý: Không public file .env lên GitHub.
-
-🔹 Bước 4: Chạy dự án
-npm run dev
-
-
-Truy cập trình duyệt tại:
-👉 http://localhost:5173
