@@ -36,13 +36,13 @@ Hệ thống được xây dựng nhằm giải quyết bài toán quản lý kh
     * ✅ **Approved:** Đã duyệt (Hoàn tất).
 
 ### 4️⃣ Báo cáo tồn kho thông minh
-Hệ thống cảnh báo tồn kho bằng màu sắc trực quan (Traffic Light System):
+
 ### 5️⃣ Phân quyền hệ thống (RBAC)
 
 | Vai trò (Role) | Mô tả & Quyền hạn |
 | :--- | :--- |
 | **🔴 Admin** | Quyền cao nhất. Quản lý tài khoản người dùng (Thêm/Sửa/Xóa/Phân quyền). |
-| **🟡 Manager** | Quản lý kho. Phê duyệt đơn nhập/xuất, xem báo cáo thống kê. *(Giới hạn: 1 người)* |
+| **🟡 Manager** | Quản lý kho. Phê duyệt đơn nhập/xuất, xem báo cáo thống kê. |
 | **🔵 Employee** | Nhân viên kho. Tạo đơn nhập/xuất, nhập dữ liệu cơ bản. |
 
 ---
